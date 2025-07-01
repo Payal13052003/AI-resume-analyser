@@ -2,10 +2,12 @@ import google.generativeai as genai
 import PyPDF2 as pdf
 import json
 import re
+import logging
+from typing import Optional
 
-def configure_genai(api_key):
+def configure_genai(api_key: str) -> None:
     """
-    Configure the Gemini API with error handling.
+    Configure the Gemini API using the provided API key.
     """
     try:
         genai.configure(api_key=api_key)
@@ -13,10 +15,10 @@ def configure_genai(api_key):
         raise Exception(f"Failed to configure Generative AI: {str(e)}")
 
 
-def get_gemini_response(prompt):
+def get_gemini_response(prompt: str) -> dict:
     """
-    Generate a response using Gemini with enhanced error handling and response validation.
-    Returns a parsed JSON dictionary.
+    Generate a response using Gemini and return a parsed JSON object.
+    Includes fallback JSON extraction and field validation.
     """
     try:
         model = genai.GenerativeModel(model_name="gemini-pro")
@@ -25,8 +27,8 @@ def get_gemini_response(prompt):
         if not response or not response.text:
             raise Exception("Empty response received from Gemini")
 
+        # First try direct JSON parsing
         try:
-            # Try to parse the response directly
             response_json = json.loads(response.text)
 
             required_fields = ["JD Match", "MissingKeywords", "Profile Summary"]
@@ -36,8 +38,8 @@ def get_gemini_response(prompt):
 
             return response_json
 
+        # Fallback if JSON is embedded in text
         except json.JSONDecodeError:
-            # Attempt to extract JSON-like structure manually
             json_pattern = r'\{.*\}'
             match = re.search(json_pattern, response.text, re.DOTALL)
             if match:
@@ -53,7 +55,7 @@ def get_gemini_response(prompt):
         raise Exception(f"Error generating response: {str(e)}")
 
 
-def extract_pdf_text(uploaded_file):
+def extract_pdf_text(uploaded_file) -> str:
     """
     Extract text from a PDF file using PyPDF2 with error handling.
     """
@@ -77,9 +79,10 @@ def extract_pdf_text(uploaded_file):
         raise Exception(f"Error extracting PDF text: {str(e)}")
 
 
-def prepare_prompt(resume_text, job_description):
+def prepare_prompt(resume_text: str, job_description: str) -> str:
     """
-    Prepare the prompt to send to Gemini, formatting the resume and job description properly.
+    Prepare a formatted prompt to send to Gemini for resume analysis.
+    Ensures proper structure and includes instructions for a JSON-only output.
     """
     if not resume_text or not job_description:
         raise ValueError("Resume text and job description cannot be empty")
@@ -104,7 +107,7 @@ def prepare_prompt(resume_text, job_description):
     Provide a response in the following JSON format ONLY:
     {{
         "JD Match": "percentage between 0-100",
-        "MissingKeywords": ["keyword1", "keyword2", ...],
+        "MissingKeywords": ["keyword1", "keyword2", "..."],
         "Profile Summary": "detailed analysis of the match and specific improvement suggestions"
     }}
     """
