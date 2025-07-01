@@ -17,92 +17,89 @@ def init_session_state():
 def main():
     # Configure Streamlit page
     st.set_page_config(page_title="Smart ATS | Hirelyzer", layout="wide")
-    
+
     # Initialize session state
     init_session_state()
 
     # Load API key
-    api_key = st.secrets.get("GOOGLE_API_KEY")  # ✅ Works for Streamlit Cloud
+    api_key = st.secrets.get("GOOGLE_API_KEY", None)
     if not api_key:
-        st.error("❌ GOOGLE_API_KEY is not set. Please add it to Streamlit secrets.")
+        st.error("❌ GOOGLE_API_KEY is not set. Please add it in Streamlit secrets.")
         return
 
     # Configure Gemini
     try:
         configure_genai(api_key)
     except Exception as e:
-        st.error(f"❌ Failed to configure Gemini API: {str(e)}")
+        st.error(f"❌ Gemini API configuration failed: {str(e)}")
         return
 
-    # Sidebar: Branding & About
+    # Sidebar
     with st.sidebar:
         logo_path = "logo.png"
         if os.path.exists(logo_path):
             st.image(logo_path, use_container_width=True)
         else:
-            st.warning("⚠️ 'logo.png' not found. Add it to your project directory.")
+            st.warning("⚠️ 'logo.png' not found. Upload it to the project directory.")
 
         st.title("🎯 Hirelyzer")
         st.subheader("About")
-        st.write(""" 
+        st.write("""
         **Hirelyzer** helps you:
-        - ✅ **Evaluate resume-job description match**
-        - 🔍 **Identify missing keywords**
-        - ✍️ **Get personalized improvement suggestions**
+        - ✅ Evaluate resume-job description match
+        - 🔍 Identify missing keywords
+        - ✍️ Get personalized improvement suggestions
         """)
         add_vertical_space(2)
         st.markdown("🔒 Powered by Google Gemini API")
 
-    # Main app layout
+    # Main UI
     st.title("📄 Hirelyzer Resume Analyzer")
     st.subheader("Optimize Your Resume for ATS")
 
-    # Input: Job Description
+    # Job Description
     jd = st.text_area(
         "Job Description",
         placeholder="Paste the job description here...",
         help="Enter the complete job description for accurate analysis"
     )
 
-    # Input: Resume Upload
+    # Resume Upload
     uploaded_file = st.file_uploader(
-        "Resume (PDF)",
-        type="pdf",
+        "Upload Resume (PDF format only)",
+        type=["pdf"],
         help="Upload your resume in PDF format"
     )
 
-    # Button: Analyze
+    # Button
     if st.button("Analyze Resume", disabled=st.session_state.processing):
         if not jd:
-            st.warning("⚠️ Please provide a job description.")
+            st.warning("⚠️ Please enter a job description.")
             return
 
         if not uploaded_file:
-            st.warning("⚠️ Please upload a resume in PDF format.")
+            st.warning("⚠️ Please upload a resume.")
             return
 
         st.session_state.processing = True
 
         try:
-            with st.spinner("📊 Analyzing your resume..."):
-                # Extract resume text
+            with st.spinner("📊 Processing..."):
+                st.info(f"📁 Processing file: `{uploaded_file.name}`")
+
                 resume_text = extract_pdf_text(uploaded_file)
                 if not resume_text:
-                    st.error("❌ Failed to extract text from the resume.")
+                    st.error("❌ Failed to extract text from the uploaded resume.")
                     return
 
-                # Prepare prompt
-                input_prompt = prepare_prompt(resume_text, jd)
+                prompt = prepare_prompt(resume_text, jd)
+                response_json = get_gemini_response(prompt)
 
-                # Call Gemini
-                response_json = get_gemini_response(input_prompt)
-
-                # Display results
-                st.success("✨ Analysis Complete!")
+                # Output
+                st.success("✅ Analysis Complete!")
 
                 # Match Score
-                match_percentage = response_json.get("JD Match", "N/A")
-                st.metric("Match Score", match_percentage)
+                st.metric("📈 JD Match Score", response_json.get("JD Match", "N/A"))
 
                 # Missing Keywords
                 st.subheader("📌 Missing Keywords")
@@ -110,14 +107,15 @@ def main():
                 if missing_keywords:
                     st.write(", ".join(missing_keywords))
                 else:
-                    st.write("✅ No critical missing keywords found!")
+                    st.write("✅ No major keywords missing!")
 
-                # Profile Summary
+                # Summary
                 st.subheader("🧾 Profile Summary")
                 st.write(response_json.get("Profile Summary", "No summary available."))
 
         except Exception as e:
-            st.error(f"❌ An error occurred: {str(e)}")
+            st.error("🚨 An error occurred during processing:")
+            st.code(str(e), language="text")
 
         finally:
             st.session_state.processing = False
