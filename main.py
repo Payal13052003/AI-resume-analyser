@@ -4,7 +4,6 @@ import json
 import re
 from typing import Optional, Dict
 
-
 def configure_genai(api_key: str) -> None:
     """
     Configure the Gemini API using the provided API key.
@@ -14,21 +13,28 @@ def configure_genai(api_key: str) -> None:
     except Exception as e:
         raise Exception(f"❌ Failed to configure Generative AI: {str(e)}")
 
-
 def get_gemini_response(prompt: str) -> Dict:
     """
     Generate a structured response using Gemini and return parsed JSON.
-    Falls back to extracting JSON-like content if direct parsing fails.
     """
     try:
-        model = genai.GenerativeModel(model_name="gemini-pro")
-        response = model.generate_content(prompt)
+        model = genai.GenerativeModel(model_name="models/gemini-pro")  # ✅ FULL model path
+
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.7,
+                "top_p": 1,
+                "top_k": 1,
+                "max_output_tokens": 2048,
+            }
+        )
 
         if not response or not response.text:
             raise Exception("❌ Empty response received from Gemini")
 
-        # Try parsing directly as JSON
         try:
+            # Try parsing directly as JSON
             response_json = json.loads(response.text)
             required_fields = ["JD Match", "MissingKeywords", "Profile Summary"]
             for field in required_fields:
@@ -37,7 +43,7 @@ def get_gemini_response(prompt: str) -> Dict:
             return response_json
 
         except json.JSONDecodeError:
-            # Attempt to extract JSON block from response text
+            # Fallback: Extract JSON block from response
             json_pattern = r"\{.*\}"
             match = re.search(json_pattern, response.text, re.DOTALL)
             if match:
@@ -51,7 +57,6 @@ def get_gemini_response(prompt: str) -> Dict:
 
     except Exception as e:
         raise Exception(f"❌ Error generating response: {str(e)}")
-
 
 def extract_pdf_text(uploaded_file) -> str:
     """
@@ -76,7 +81,6 @@ def extract_pdf_text(uploaded_file) -> str:
 
     except Exception as e:
         raise Exception(f"❌ Error extracting PDF text: {str(e)}")
-
 
 def prepare_prompt(resume_text: str, job_description: str) -> str:
     """
