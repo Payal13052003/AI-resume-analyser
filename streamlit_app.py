@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_extras.add_vertical_space import add_vertical_space
 import os
 import json
-from helper import (
+from main import (
     configure_genai,
     get_gemini_response,
     extract_pdf_text,
