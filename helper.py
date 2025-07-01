@@ -8,42 +8,45 @@ def configure_genai(api_key):
         genai.configure(api_key=api_key)
     except Exception as e:
         raise Exception(f"Failed to configure Generative AI: {str(e)}")
-    
+import json
+import re
+import google.generativeai as genai  # Make sure this is correctly imported and configured
+
 def get_gemini_response(prompt):
-    """Generate a response using Gemini with enhanced error handling and response validation."""
+    """
+    Generate a response using Gemini with enhanced error handling and response validation.
+    """
     try:
-        model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+        model = genai.GenerativeModel(model_name="gemini-pro")
         response = model.generate_content(prompt)
-        
+
         # Ensure response is not empty
         if not response or not response.text:
             raise Exception("Empty response received from Gemini")
-            
+
         # Try to parse the response as JSON
         try:
             response_json = json.loads(response.text)
-            
+
             # Validate required fields
             required_fields = ["JD Match", "MissingKeywords", "Profile Summary"]
             for field in required_fields:
                 if field not in response_json:
                     raise ValueError(f"Missing required field: {field}")
-                    
-            return response.text
-            
+
+            return response_json  # return parsed JSON instead of text
+
         except json.JSONDecodeError:
             # If response is not valid JSON, try to extract JSON-like content
-            import re
             json_pattern = r'\{.*\}'
             match = re.search(json_pattern, response.text, re.DOTALL)
             if match:
-                return match.group()
+                return json.loads(match.group())  # parse the extracted JSON
             else:
                 raise Exception("Could not extract valid JSON response")
-                
+
     except Exception as e:
         raise Exception(f"Error generating response: {str(e)}")
-
 
 '''def get_gemini_response(prompt):
     """Generate a response using Gemini with enhanced error handling and response validation."""
