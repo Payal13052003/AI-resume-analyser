@@ -35,6 +35,21 @@ File Handling: PyPDF2
 
 Output: JSON
 
+## Web App (Next.js + Vercel)
+This repo now includes a Next.js web app in the `web/` folder for Vercel deployment.
+
+### Local Run
+1. `cd web`
+2. `npm install`
+3. Create `web/.env.local` and set `GOOGLE_API_KEY=your_key`
+4. `npm run dev`
+
+### Vercel Deployment
+1. Import the repository in Vercel.
+2. Set the project root to `web/`.
+3. Add environment variable `GOOGLE_API_KEY` in Vercel settings.
+4. Deploy.
+
 🔮 Future Scope
 🖥️ Expanded Web Features
 Enhance Streamlit UI with drag-and-drop uploads, advanced visualization, and real-time resume score updates.
