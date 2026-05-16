@@ -18,7 +18,7 @@ def get_gemini_response(prompt: str) -> Dict:
     Generate a structured response using Gemini and return parsed JSON.
     """
     try:
-        model = genai.GenerativeModel(model_name="models/gemini-pro")  # ✅ FULL model path
+        model = genai.GenerativeModel(model_name="models/gemini-2.0-flash")
 
         response = model.generate_content(
             prompt,

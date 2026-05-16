@@ -1,6 +1,6 @@
 import streamlit as st
-from streamlit_extras.add_vertical_space import add_vertical_space
 import os
+from dotenv import load_dotenv
 import json
 from main import (
     configure_genai,
@@ -15,6 +15,7 @@ def init_session_state():
         st.session_state.processing = False
 
 def main():
+    load_dotenv()
     # Configure Streamlit page
     st.set_page_config(page_title="Smart ATS | Hirelyzer", layout="wide")
 
@@ -22,9 +23,17 @@ def main():
     init_session_state()
 
     # Load API key
-    api_key = st.secrets.get("GOOGLE_API_KEY", None)
+    api_key = None
+    try:
+        api_key = st.secrets.get("GOOGLE_API_KEY", None)
+    except Exception:
+        api_key = None
+
     if not api_key:
-        st.error("❌ GOOGLE_API_KEY is not set. Please add it in Streamlit secrets.")
+        api_key = os.getenv("GOOGLE_API_KEY")
+
+    if not api_key:
+        st.error("❌ GOOGLE_API_KEY is not set. Add it in Streamlit secrets or .env.")
         return
 
     # Configure Gemini
@@ -50,7 +59,7 @@ def main():
         - 🔍 Identify missing keywords
         - ✍️ Get personalized improvement suggestions
         """)
-        add_vertical_space(2)
+        st.space(2)
         st.markdown("🔒 Powered by Google Gemini API")
 
     # Main UI
